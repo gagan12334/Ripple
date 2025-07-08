@@ -1,0 +1,16 @@
+function | def	function declaration
+-> | :	replaces the colon after headers
+<- | =	assignment instead of =
+equal | == assignment instead of ==
+when | if	conditional
+otherwise | else	fallback
+until | while	while‑loop
+each ... in | for … in	iteration
+print	| print	same built‑in
+
+
+
+
+
+#implement this later
+$ is reactive	declares a reactive variable
