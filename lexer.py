@@ -1,19 +1,39 @@
 from enum import Enum
 
-# class TokenType(Enum):
-#   # pattern                     # token name
-#   NUMBER  = r'\d+(\.\d+)?'      # integers and decimals
-#   PLUS    = r'\+'               # literal “+”
-#   MINUS   = r'-'                # literal “-”
-#   STAR    = r'\*'               # literal “*”
-#   SLASH   = r'/'                # literal “/”
-#   LPAREN  = r'\('               # literal “(”
-#   RPAREN  = r'\)'               # literal “)”
-#   IDENT   = r'[A-Za-z_]\w*'      # names (and reactive markers later)
-#   DOLLAR  = r'\$'               # “$”
-#   NEWLINE = r'\n'               # newline
-#   WS      = r'[ \t]+'           # whitespace (we’ll skip these)
-#   EOF     = ''                  # special case
+#ERROR:
+class Error: 
+  def __init__(self,pos_start, pos_end, error_name, details):
+    self.pos_start = pos_start
+    self.pos_end = pos_end
+    self.error_name = error_name
+    self.details = details
+
+  def as_string(self):
+    result = f'{self.error_name}: {self.details}'
+    result += f'\nFile {self.pos_start.fileName}, line {self.pos_start.ln + 1}'
+    return result
+  
+class IllegalCharError(Error):
+  def __init__(self, pos_start, pos_end, details):
+    super().__init__(pos_start, pos_end, "Illegal Character", details)
+
+#POSITION
+class Position:
+  def __init__(self, idx, ln, col, fileName, fileTxt) -> None:
+    self.idx = idx
+    self.ln = ln
+    self.col = col
+    self.fileName = fileName 
+    self.fileTxt = fileTxt
+  def advance(self, current_char) -> int:
+    self.idx += 1
+    self.col += 1
+    if current_char == "\n":
+      self.ln += 1
+      self.col = 0 #reset the column to 0
+    return self.idx
+  def copy(self):
+    return Position(self.idx, self.ln, self.col, self.fileName, self.fileTxt)
 
 class TokenType(Enum):
   INT  = 'INT'
@@ -23,6 +43,10 @@ class TokenType(Enum):
   DIVIDE = 'DIVIDE'
   STAR    = 'STAR'
   MULTIPLY = 'MULTIPLY'
+  GREATERTHAN = 'GREATERTHAN'
+  LESSTHAN = 'LESSTHAN'
+  RARROW = 'RARROW' #The arrows are for the -> and <- 
+  LARROW = 'LARROW'
   LPAREN  = 'LPAREN'
   RPAREN  = 'RPAREN'
   IDENT   = 'IDENT' #identifier
@@ -33,7 +57,7 @@ class TokenType(Enum):
   EQUAL   = 'EQUAL'
   BANG    = 'BANG'
 
-keywords = ['function', 'equal', 'when', 'until', 'each', 'in', 'print']
+keywords = ['if','function', 'equal', 'when', 'until', 'each', 'in', 'print']
 
 class Token:
   def __init__(self, type_, value):
@@ -89,21 +113,42 @@ class Lexer:
       elif self.currChar == '\n':
         tokens.append(Token(TokenType.NEWLINE))
         self.advance()
-      elif self.currChar.isDigit():
+      elif self.currChar.isdigit():
         tokens.append(self.makeDigit())
-      elif self.currChar.isalpa(): 
-        tokens.append(self.makeIdentifier)
+        self.advance()
+      elif self.currChar.isalpha() or self.currChar == '_': 
+        tokens.append(self.makeIdentifier())
+        self.advance()
       elif self.currChar == '$':
         tokens.append(Token(TokenType.DOLLAR))
+        self.advance()
+      elif self.currChar == '>':
+        tokens.append(Token(TokenType.GREATERTHAN))
+      elif self.currChar == '<':
+        tokens.append(Token(TokenType.LESSTHAN))
+      elif self.currChar == '-':
+        if self.pos != len(self.txt):
+          self.advance()
+          if self.isRarrow():
+            tokens.append(Token(TokenType.RARROW))
+        else: 
+          raise ValueError(f"Cant end with {self.currChar}")
+      else:
+        print(f"Warning: Skipping unknown character: {self.currChar}")
+        self.advance()
     tokens.append(Token(TokenType.EOF), None)
       # handle eof, handle numbers, identifiers and unknown characters
     return tokens
   
+  def isRarrow(self):
+    if self.currChar == '>':
+      return True
+    return False
   def makeDigit(self):
     numOfDot = 0
     numberStr = ''
-    while (self.currChar not None) and (self.currChar.isdigit() or self.currChar == '.'):
-      if (self.currChar not '.') and (self.currChar.isdigit() == False):
+    while (self.currChar is not None) and (self.currChar.isdigit() or self.currChar == '.'):
+      if (self.currChar is not '.') and (self.currChar.isdigit() == False):
         break # we reached end of number
       if self.currChar == '.':
         numOfDot += 1
@@ -120,11 +165,12 @@ class Lexer:
   
   def makeIdentifier(self):
     res = ''
-    while (self.currChar not None) and (self.currChar.isdigit() or self.currChar.isalpha() or self.currChar == '_'):
+    while (self.currChar is not None) and (self.currChar.isdigit() or self.currChar.isalpha() or self.currChar == '_'):
       res += self.currChar
       self.advance()
-    
-    return 
+    if res in keywords:
+      return Token(TokenType.KEYWORD, res)
+    return Token(TokenType.IDENT, res)
 
 
 

@@ -1,0 +1,6 @@
+Do this everytime you add something after the original commit
+
+git add .
+git commit -m "your message here"
+git push
+
