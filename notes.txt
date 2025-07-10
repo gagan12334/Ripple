@@ -4,3 +4,10 @@ git add .
 git commit -m "your message here"
 git push
 
+still to implement:
+- String literals (e.g., "hello")
+- Comments (e.g., # this is a comment)
+- Token position tracking (for better error messages)
+- Block delimiters (e.g., { and } if your language uses them)
+- Logical operators (e.g., &&, ||, ==, != if needed)
+- More robust error handling (raise exceptions or collect errors)

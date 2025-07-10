@@ -18,22 +18,22 @@ class IllegalCharError(Error):
     super().__init__(pos_start, pos_end, "Illegal Character", details)
 
 #POSITION
-class Position:
-  def __init__(self, idx, ln, col, fileName, fileTxt) -> None:
-    self.idx = idx
-    self.ln = ln
-    self.col = col
-    self.fileName = fileName 
-    self.fileTxt = fileTxt
-  def advance(self, current_char) -> int:
-    self.idx += 1
-    self.col += 1
-    if current_char == "\n":
-      self.ln += 1
-      self.col = 0 #reset the column to 0
-    return self.idx
-  def copy(self):
-    return Position(self.idx, self.ln, self.col, self.fileName, self.fileTxt)
+# class Position:
+#   def __init__(self, idx, ln, col, fileName, fileTxt) -> None:
+#     self.idx = idx
+#     self.ln = ln
+#     self.col = col
+#     self.fileName = fileName 
+#     self.fileTxt = fileTxt
+#   def advance(self, current_char) -> int:
+#     self.idx += 1
+#     self.col += 1
+#     if current_char == "\n":
+#       self.ln += 1
+#       self.col = 0 #reset the column to 0
+#     return self.idx
+#   def copy(self):
+#     return Position(self.idx, self.ln, self.col, self.fileName, self.fileTxt)
 
 class TokenType(Enum):
   INT  = 'INT'
@@ -46,7 +46,7 @@ class TokenType(Enum):
   GREATERTHAN = 'GREATERTHAN'
   LESSTHAN = 'LESSTHAN'
   RARROW = 'RARROW' #The arrows are for the -> and <- 
-  LARROW = 'LARROW'
+  # LARROW = 'LARROW' 
   LPAREN  = 'LPAREN'
   RPAREN  = 'RPAREN'
   IDENT   = 'IDENT' #identifier
@@ -60,14 +60,15 @@ class TokenType(Enum):
 keywords = ['if','function', 'equal', 'when', 'until', 'each', 'in', 'print']
 
 class Token:
-  def __init__(self, type_, value):
+  def __init__(self, type_, value=None):
     self.type = type_
     self.value = value
   
   def __repr__(self):
     # so if you have something like type = INT and value = 42 thats chill but type=PLUS and value=None then just print type
     if self.value: 
-      return f'{self.type}:{self.value}'
+      #enum has a property named name
+      return f'{self.type.name}:{self.value}'
     return f'{self.type}'
 
 class Lexer:
@@ -90,8 +91,13 @@ class Lexer:
         tokens.append(Token(TokenType.PLUS))
         self.advance()
       elif self.currChar == '-':
-        tokens.append(Token(TokenType.MINUS))
-        self.advance()
+        if (self.pos + 1 < len(self.txt)) and self.txt[self.pos+1] == '>':
+          tokens.append(Token(TokenType.RARROW))
+          self.advance() # do it twice so for - and >
+          self.advance()
+        else:
+          tokens.append(Token(TokenType.MINUS))
+          self.advance()
       elif self.currChar == '*':
         tokens.append(Token(TokenType.MULTIPLY))
         self.advance()
@@ -104,9 +110,6 @@ class Lexer:
       elif self.currChar == ')':
         tokens.append(Token(TokenType.RPAREN))
         self.advance()
-      elif self.currChar == '=':
-        tokens.append(Token(TokenType.EQUAL))
-        self.advance()
       elif self.currChar == '!':
         tokens.append(Token(TokenType.BANG))
         self.advance()
@@ -115,40 +118,33 @@ class Lexer:
         self.advance()
       elif self.currChar.isdigit():
         tokens.append(self.makeDigit())
-        self.advance()
       elif self.currChar.isalpha() or self.currChar == '_': 
         tokens.append(self.makeIdentifier())
-        self.advance()
       elif self.currChar == '$':
         tokens.append(Token(TokenType.DOLLAR))
         self.advance()
       elif self.currChar == '>':
         tokens.append(Token(TokenType.GREATERTHAN))
+        self.advance()
       elif self.currChar == '<':
-        tokens.append(Token(TokenType.LESSTHAN))
-      elif self.currChar == '-':
-        if self.pos != len(self.txt):
+        if (self.pos + 1 < len(self.txt)) and self.txt[self.pos+1] == '-':
+          tokens.append(Token(TokenType.EQUAL)) # Left arrow is equal
+          self.advance() # do it twice so for - and >
           self.advance()
-          if self.isRarrow():
-            tokens.append(Token(TokenType.RARROW))
-        else: 
-          raise ValueError(f"Cant end with {self.currChar}")
+        else:
+          tokens.append(Token(TokenType.LESSTHAN))
+          self.advance()
       else:
         print(f"Warning: Skipping unknown character: {self.currChar}")
         self.advance()
-    tokens.append(Token(TokenType.EOF), None)
-      # handle eof, handle numbers, identifiers and unknown characters
+    tokens.append(Token(TokenType.EOF, None))
     return tokens
-  
-  def isRarrow(self):
-    if self.currChar == '>':
-      return True
-    return False
+
   def makeDigit(self):
     numOfDot = 0
     numberStr = ''
-    while (self.currChar is not None) and (self.currChar.isdigit() or self.currChar == '.'):
-      if (self.currChar is not '.') and (self.currChar.isdigit() == False):
+    while (self.currChar != None) and (self.currChar.isdigit() or self.currChar == '.'):
+      if (self.currChar != '.') and (self.currChar.isdigit() == False):
         break # we reached end of number
       if self.currChar == '.':
         numOfDot += 1
@@ -172,6 +168,13 @@ class Lexer:
       return Token(TokenType.KEYWORD, res)
     return Token(TokenType.IDENT, res)
 
+if __name__ == "__main__":
+  #test lexer:
+  test_input = "3+4 * (2-1)"
+  lexer = Lexer(test_input)
+  tokens = lexer.tokenize()
+  print("Input: ", test_input)
+  print("Tokens:", tokens)
 
 
 
