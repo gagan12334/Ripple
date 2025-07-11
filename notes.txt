@@ -11,3 +11,20 @@ still to implement:
 - Block delimiters (e.g., { and } if your language uses them)
 - Logical operators (e.g., &&, ||, ==, != if needed)
 - More robust error handling (raise exceptions or collect errors)
+
+
+in a ast there are interior nodes and leaf nodes. Leaf nodes are ones without any lines branching off. A node can be a operator or an operand usually the operands are the leaf nodes. There are 2 types of arthmatic operators: unary and binary meaning that for a unary node it has one line connecting to one operand like 6 and then a binary is like 2 child nodes like 3+5 so like this total example could be 6 * (3+5).
+
+to build the ast: 
+Step 1: AST Node Classes
+Create classes for different types of nodes
+Each node should have a __repr__ method for debugging
+Step 2: Parser Class
+Takes a list of tokens as input
+Has methods to advance through tokens
+Has separate parsing methods for different precedence levels
+Returns an AST
+Step 3: Interpreter Class
+Uses the Visitor Pattern to traverse the AST
+Has a method for each node type
+Evaluates the tree and returns the result

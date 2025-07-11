@@ -69,7 +69,7 @@ class Token:
     if self.value: 
       #enum has a property named name
       return f'{self.type.name}:{self.value}'
-    return f'{self.type}'
+    return f'{self.type.name}'
 
 class Lexer:
   def __init__(self, text):
